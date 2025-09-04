@@ -1,4 +1,4 @@
-name: bluetooth_monitor
+name: bluetooth_monitor_plugin
 description: "Cross-platform Bluetooth device monitoring plugin with connection listeners and device info"
 version: 1.0.0
 homepage: https://github.com/yourusername/bluetooth_monitor
