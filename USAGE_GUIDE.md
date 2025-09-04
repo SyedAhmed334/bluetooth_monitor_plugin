@@ -18,9 +18,11 @@ Add the plugin to your `pubspec.yaml`:
 ```yaml
 dependencies:
   bluetooth_monitor:
-    path: path/to/bluetooth_monitor_plugin  # Local development
-    # Or when published:
-    # bluetooth_monitor: ^1.0.0
+    git:
+      url: https://github.com/SyedAhmed334/bluetooth_monitor_plugin.git
+    # Or for local development:
+    # bluetooth_monitor:
+    #   path: path/to/bluetooth_monitor_plugin
 ```
 
 Run `flutter pub get` to install.
@@ -29,14 +31,16 @@ Run `flutter pub get` to install.
 
 ### Android
 - ✅ Full Bluetooth Classic and BLE device monitoring
+- ✅ Bluetooth on/off/turning on/turning off state detection
 - ✅ Real-time connection/disconnection events
 - ✅ Device type recognition (Headphones, Speaker, Phone, etc.)
-- ✅ Battery level monitoring
-- ✅ RSSI (signal strength) monitoring
-- ✅ Connect/disconnect device control
+- ✅ Battery level monitoring (limited support)
+- ✅ RSSI (signal strength) monitoring (limited support)
+- ❌ Connect/disconnect device control (disabled for security)
 
 ### iOS
 - ✅ Audio device monitoring via AVAudioSession
+- ✅ Bluetooth on/off state detection via Core Bluetooth
 - ✅ Connection/disconnection events for audio devices
 - ✅ Device type recognition for audio devices
 - ❌ Battery/RSSI not available (iOS limitation)
@@ -610,10 +614,33 @@ class AudioSwitcher {
 
 ### Common Issues
 
-1. **No events on iOS**: iOS only supports audio devices via AVAudioSession
-2. **Permission errors on Android**: Ensure Bluetooth permissions are granted
-3. **Battery shows -1**: Not all devices support battery reporting
-4. **RSSI shows -999**: Some devices don't report signal strength
+1. **Missing Bluetooth on/off events**: Use `BluetoothMonitor.events` instead of `BluetoothMonitor.connectionEvents` to receive all event types
+2. **No events on iOS**: iOS only supports audio devices via AVAudioSession
+3. **Permission errors on Android**: Ensure Bluetooth permissions are granted
+4. **Battery shows -1**: Not all devices support battery reporting
+5. **RSSI shows -999**: Some devices don't report signal strength
+
+### Important: Listen to All Events
+
+To receive Bluetooth on/off state changes, use the main events stream:
+
+```dart
+// ✅ Correct - receives ALL events including on/off
+BluetoothMonitor.events.listen((event) {
+  if (event.type == BluetoothEventType.bluetoothOn) {
+    print('Bluetooth turned ON');
+  } else if (event.type == BluetoothEventType.bluetoothOff) {
+    print('Bluetooth turned OFF');
+  } else if (event.type == BluetoothEventType.connected) {
+    print('Device connected: ${event.deviceName}');
+  }
+});
+
+// ❌ Incorrect - only receives connect/disconnect
+BluetoothMonitor.connectionEvents.listen((event) {
+  // Will NOT receive bluetoothOn/bluetoothOff events
+});
+```
 
 ### Debug Mode
 

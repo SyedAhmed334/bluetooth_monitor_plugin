@@ -1,10 +1,13 @@
 import Flutter
 import UIKit
 import AVFoundation
+import CoreBluetooth
 
 public class BluetoothMonitorPlugin: NSObject, FlutterPlugin {
     private var bluetoothEventSink: FlutterEventSink?
     private var audioSession: AVAudioSession!
+    private var centralManager: CBCentralManager?
+    private var lastBluetoothState: CBManagerState = .unknown
     
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(name: "bluetooth_monitor", binaryMessenger: registrar.messenger())
@@ -15,6 +18,7 @@ public class BluetoothMonitorPlugin: NSObject, FlutterPlugin {
         eventChannel.setStreamHandler(instance)
         
         instance.setupAudioSessionObservers()
+        instance.setupBluetoothManager()
     }
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -113,16 +117,29 @@ public class BluetoothMonitorPlugin: NSObject, FlutterPlugin {
         }
     }
     
+    private func setupBluetoothManager() {
+        centralManager = CBCentralManager(delegate: self, queue: nil)
+    }
+    
     private func getBluetoothState() -> String {
-        let currentRoute = audioSession.currentRoute
-        for output in currentRoute.outputs {
-            if output.portType == .bluetoothA2DP || 
-               output.portType == .bluetoothHFP || 
-               output.portType == .bluetoothLE {
-                return "BLUETOOTH_ON"
-            }
+        guard let manager = centralManager else { return "BLUETOOTH_UNKNOWN" }
+        
+        switch manager.state {
+        case .poweredOn:
+            return "BLUETOOTH_ON"
+        case .poweredOff:
+            return "BLUETOOTH_OFF"
+        case .unauthorized, .denied:
+            return "BLUETOOTH_UNAUTHORIZED"
+        case .unsupported:
+            return "BLUETOOTH_UNSUPPORTED"
+        case .resetting:
+            return "BLUETOOTH_RESETTING"
+        case .unknown:
+            return "BLUETOOTH_UNKNOWN"
+        @unknown default:
+            return "BLUETOOTH_UNKNOWN"
         }
-        return "BLUETOOTH_ON"
     }
     
     private func getConnectedDevices(result: @escaping FlutterResult) {
@@ -162,5 +179,31 @@ extension BluetoothMonitorPlugin: FlutterStreamHandler {
     public func onCancel(withArguments arguments: Any?) -> FlutterError? {
         bluetoothEventSink = nil
         return nil
+    }
+}
+
+extension BluetoothMonitorPlugin: CBCentralManagerDelegate {
+    public func centralManagerDidUpdateState(_ central: CBCentralManager) {
+        let newState = central.state
+        
+        if newState != lastBluetoothState {
+            lastBluetoothState = newState
+            
+            var eventType: String
+            switch newState {
+            case .poweredOn:
+                eventType = "BLUETOOTH_ON"
+            case .poweredOff:
+                eventType = "BLUETOOTH_OFF"
+            default:
+                eventType = "BLUETOOTH_STATE_CHANGED"
+            }
+            
+            let eventData: [String: Any] = [
+                "event": eventType,
+                "state": getBluetoothState()
+            ]
+            sendBluetoothEvent(eventData: eventData)
+        }
     }
 }
