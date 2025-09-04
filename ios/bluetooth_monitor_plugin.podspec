@@ -3,7 +3,7 @@
 # Run `pod lib lint bluetooth_monitor.podspec` to validate before publishing.
 #
 Pod::Spec.new do |s|
-  s.name             = 'bluetooth_monitor'
+  s.name             = 'bluetooth_monitor_plugin'
   s.version          = '0.0.1'
   s.summary          = 'A new Flutter plugin project.'
   s.description      = <<-DESC
