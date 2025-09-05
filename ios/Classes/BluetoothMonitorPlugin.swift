@@ -129,7 +129,7 @@ public class BluetoothMonitorPlugin: NSObject, FlutterPlugin {
             return "BLUETOOTH_ON"
         case .poweredOff:
             return "BLUETOOTH_OFF"
-        case .unauthorized, .denied:
+        case .unauthorized:
             return "BLUETOOTH_UNAUTHORIZED"
         case .unsupported:
             return "BLUETOOTH_UNSUPPORTED"
